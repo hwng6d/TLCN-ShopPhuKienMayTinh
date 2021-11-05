@@ -1,10 +1,14 @@
 const express = require('express');
+const cors = require('cors');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const productRouter = require('./routes/productRoutes');
 
 //create instance for appication of express
 const app = express();
+
+//middle preventing cors error
+app.use(cors());
 
 //middleware for static files
 app.use(express.static(`${__dirname}/public`));
