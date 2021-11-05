@@ -47,7 +47,7 @@ class APIFeatures {
 		return this;
 	}
 
-	/*paginate() {
+	paginate() {
 		// 4) paging and limiting documents
 		const page = this.expressQuery.page * 1 || 1;
 		const limit = this.expressQuery.limit * 1 || this.resourceLength;
@@ -56,7 +56,7 @@ class APIFeatures {
 		this.mongooseQuery = this.mongooseQuery.skip(skip).limit(limit);
 
 		return this;
-	}*/
+	}
 }
 
 module.exports = APIFeatures;

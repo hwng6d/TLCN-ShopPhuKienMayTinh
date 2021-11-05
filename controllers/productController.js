@@ -3,12 +3,11 @@ const APIFeatures = require('./../utils/apiFeatures');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 
-//create instance of Product model to get origin length
-const productsOrigin = new Product();
-const lengthProductOrigin = productsOrigin.length;
-
 //get all products
 exports.getAllProducts = catchAsync(async (req, res, next) => {
+	//create instance of Product model to get origin length
+	const lengthProductOrigin = (await Product.find()).length;
+
 	//executing query
 	const features = new APIFeatures(
 		Product.find(),
@@ -17,8 +16,8 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 	)
 		.filter()
 		.sort()
-		.limitFields();
-	//.paginate();
+		.limitFields()
+		.paginate();
 	const products = await features.mongooseQuery;
 
 	//Send response
