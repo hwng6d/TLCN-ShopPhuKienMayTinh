@@ -17,8 +17,8 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
 	)
 		.filter()
 		.sort()
-		.limitFields()
-		.paginate();
+		.limitFields();
+	//.paginate();
 	const products = await features.mongooseQuery;
 
 	//Send response
