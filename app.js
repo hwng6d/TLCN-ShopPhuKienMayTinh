@@ -3,6 +3,7 @@ const cors = require('cors');
 const AppError = require('./utils/appError');
 const globalErrorHandler = require('./controllers/errorController');
 const productRouter = require('./routes/productRoutes');
+const userRouter = require('./routes/userRoutes');
 
 //create instance for appication of express
 const app = express();
@@ -18,7 +19,7 @@ app.use(express.json());
 
 //middleware for tour, user router
 app.use('/api/v1/products', productRouter);
-//app.use('/api/v1/users', userRouter);
+app.use('/api/v1/users', userRouter);
 
 //middleware for not found page
 app.all('*', (req, res, next) => {
