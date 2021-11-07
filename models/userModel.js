@@ -65,7 +65,7 @@ userSchema.pre('save', async function (next) {
 
 //add value to passwordChangedAt before password (but not rest of other fields) is changed
 userSchema.pre('save', async function (next) {
-	//check if user is new or not recently changed password
+	//check whether user is new or not recently changed password
 	if (!this.isModified('password') || this.isNew) {
 		return next();
 	}
