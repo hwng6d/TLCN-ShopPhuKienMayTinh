@@ -24,13 +24,21 @@ router.delete('/deleteMe', authController.protect, userController.deleteMe);
 //Routes of users as assistant/admin (not yet completed)
 router
 	.route('/')
-	.get(authController.protect, userController.getAllUsers)
+	.get(
+		authController.protect,
+		authController.restrictTo('admin', 'assistant'),
+		userController.getAllUsers
+	)
 	.post(userController.createUser);
 router
 	.route('/:id')
 	.get(userController.getUser)
 	.patch(userController.updateUser)
-	.delete(userController.deleteUser);
+	.delete(
+		authController.protect,
+		authController.restrictTo('admin'),
+		userController.deleteUser
+	);
 
 //export for using in app
 module.exports = router;

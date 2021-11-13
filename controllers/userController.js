@@ -1,6 +1,9 @@
+const multer = require('multer');
+const sharp = require('sharp');
 const User = require('./../models/userModel');
 const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
+const factory = require('./handlerFactory');
 
 const filterObj = (obj, ...allowedFields) => {
 	const newObj = {};
@@ -11,18 +14,43 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 // 1) FOR CUSTOMER
-//Get all users
-exports.getAllUsers = catchAsync(async (req, res, next) => {
-	const users = await User.find();
+//Get me
+exports.getMe = (req, res, next) => {
+	req.params.id = req.user.id;
+	next();
+};
 
-	//Send response
-	res.status(200).json({
-		status: 'success',
-		results: users.length,
-		data: {
-			users,
-		},
-	});
+//Upload user photo
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+	if (file.mimetype.startsWith('image')) {
+		cb(null, true);
+	} else {
+		cb(new AppError('Not an image! Please upload only image', 400), false);
+	}
+};
+
+const upload = multer({
+	storage: multerStorage,
+	fileFilter: multerFilter,
+});
+
+exports.uploadUserPhoto = upload.single('photo');
+
+//Resize after uploading to the memory buffer
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
+	if (!req.file) return next();
+
+	req.file.filename = `user-${req.user.id}-${Date.now().jpeg}`;
+
+	await sharp(req.file.buffer)
+		.resize(500, 500)
+		.toFormat('jpeg')
+		.jpeg({ quality: 90 })
+		.toFile(`public/img/users/${req.file.filename}`);
+
+	next();
 });
 
 //Update current user
@@ -68,31 +96,19 @@ exports.deleteMe = catchAsync(async (req, res, next) => {
 });
 
 // 2) FOR ADMIN (NOT COMPLETED YET)
+//Get all users
+exports.getAllUsers = factory.getAll(User);
 //Get one user
-exports.getUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'This route is not yet defined!',
-	});
-};
+exports.getUser = factory.getOne(User);
 //Create new user
 exports.createUser = (req, res) => {
 	res.status(500).json({
 		status: 'error',
-		message: 'This route is not yet defined!',
+		message:
+			'This route is not yet defined! Instead, use sign up to create new user!',
 	});
 };
 //Update a user
-exports.updateUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'This route is not yet defined!',
-	});
-};
+exports.updateUser = factory.updateOne(User);
 //Delete a user
-exports.deleteUser = (req, res) => {
-	res.status(500).json({
-		status: 'error',
-		message: 'This route is not yet defined!',
-	});
-};
+exports.deleteUser = factory.deleteOne(User);

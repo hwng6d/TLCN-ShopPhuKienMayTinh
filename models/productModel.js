@@ -9,6 +9,7 @@ const productSchema = new mongoose.Schema(
 			required: true,
 			trim: true,
 		},
+		slug: String,
 		price: {
 			type: Number,
 			require: true,
@@ -38,14 +39,15 @@ const productSchema = new mongoose.Schema(
 		images: [String],
 		ratingsAverage: {
 			type: Number,
+			default: 4.5,
 			min: [1, 'Rating must be above 1'],
 			max: [5, 'Rating must be below 5'],
+			set: (val) => Math.round(val * 10) / 10,
 		},
 		ratingsQuantity: {
 			type: Number,
 			default: 0,
 		},
-		comments: [String],
 		origin: String,
 		manufacturer: String,
 		quantity: {
@@ -58,14 +60,25 @@ const productSchema = new mongoose.Schema(
 		},
 	},
 	{
-		toJSON: {
-			virtual: true,
-		},
-		toObject: {
-			virtual: true,
-		},
+		toJSON: { virtuals: true },
+		toObject: { virtuals: true },
 	}
 );
+
+productSchema.index({ slug: 1 });
+
+//VIRTUAL POPULATE
+productSchema.virtual('reviews', {
+	ref: 'Review',
+	foreignField: 'product',
+	localField: '_id',
+});
+
+//DOCUMENT MIDDLEWARE: slug
+productSchema.pre('save', function (next) {
+	this.slug = slugify(this.name, { lower: true });
+	next();
+});
 
 const Product = mongoose.model('Product', productSchema);
 module.exports = Product;
