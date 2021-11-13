@@ -9,7 +9,7 @@ const reviewRouter = require('./routes/reviewRoutes');
 //create instance for appication of express
 const app = express();
 
-//middle preventing cors error
+//middle preventing cors errorr
 app.use(cors());
 
 //middleware for static files
