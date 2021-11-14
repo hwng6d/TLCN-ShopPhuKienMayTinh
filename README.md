@@ -175,7 +175,7 @@
   <tr>
     <td>/decreaseFromCart</td>
     <td>POST: trừ số lượng SP<br>nào đó trong giỏ hàng</td>
-    <td>KH giảm số lượng SP nào đó<br>trong giỏ hàng</td>
+    <td>KH giảm số lượng SP nào đó<br>trong giỏ hàng, khi số lượng đang<br>bằng 1 thì bấm giảm sẽ xoá SP</td>
   </tr>
   <tr>
     <td>/deleteFromCart</td>
