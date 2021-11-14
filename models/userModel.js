@@ -2,50 +2,78 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
+const Product = require('./../models/productModel');
+const AppError = require('../utils/appError');
 
-const userSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		require: [true, 'Please give us your name'],
-	},
-	email: {
-		type: String,
-		require: [true, 'Please give us your email'],
-		unique: [true, 'Email must be unique'],
-		lowercase: true,
-		validate: [validator.isEmail, 'Please provide a valid email'],
-	},
-	password: {
-		type: String,
-		require: [true, 'Please provide us your password'],
-		minlength: [8, 'Password must be at least 8 characters'],
-		select: false, //make this field is not visible in any output
-	},
-	passwordConfirm: {
-		type: String,
-		require: [true, 'Please confirm your password'],
-		validate: {
-			validator: function (elm) {
-				return elm === this.password;
+const userSchema = new mongoose.Schema(
+	{
+		name: {
+			type: String,
+			require: [true, 'Please give us your name'],
+		},
+		email: {
+			type: String,
+			require: [true, 'Please give us your email'],
+			unique: [true, 'Email must be unique'],
+			lowercase: true,
+			validate: [validator.isEmail, 'Please provide a valid email'],
+		},
+		password: {
+			type: String,
+			require: [true, 'Please provide us your password'],
+			minlength: [8, 'Password must be at least 8 characters'],
+			select: false, //make this field is not visible in any output
+		},
+		passwordConfirm: {
+			type: String,
+			require: [true, 'Please confirm your password'],
+			validate: {
+				validator: function (elm) {
+					return elm === this.password;
+				},
+				message: 'Passwords are not the same',
 			},
-			message: 'Passwords are not the same',
+		},
+		photo: String,
+		role: {
+			type: String,
+			enum: ['customer', 'assistant', 'admin'],
+			default: 'customer',
+		},
+		passwordChangedAt: Date,
+		passwordResetToken: String,
+		passwordResetExpires: Date,
+		active: {
+			type: Boolean,
+			default: true,
+			select: false,
+		},
+		cart: {
+			items: [
+				{
+					productId: {
+						type: mongoose.Types.ObjectId,
+						ref: 'Product',
+						required: true,
+					},
+					price: {
+						type: Number,
+						required: true,
+					},
+					qty: {
+						type: Number,
+						required: true,
+					},
+				},
+			],
+			totalPrice: Number,
 		},
 	},
-	photo: String,
-	role: {
-		type: String,
-		enum: ['customer', 'assistant', 'admin'],
-		default: 'customer',
-	},
-	passwordChangedAt: Date,
-	passwordResetToken: String,
-	passwordResetExpires: Date,
-	active: {
-		type: Boolean,
-		default: true,
-		select: false,
-	},
-});
+	{
+		toJSON: { virtuals: true },
+		toObject: { virtuals: true },
+	}
+);
 
 //hash password before actually saving to the db
 userSchema.pre('save', async function (next) {
@@ -120,6 +148,77 @@ userSchema.methods.createResetPasswordToken = function () {
 	this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
 
 	return resetToken;
+};
+
+//method to addToCart
+userSchema.methods.addToCart = async function (productId) {
+	const product = await Product.findById(productId);
+
+	if (product) {
+		//check if passed product has in current cart
+		const isExisting = this.cart.items.findIndex(
+			(item) =>
+				new String(item.productId).trim() ===
+				new String(product.id).trim()
+		);
+
+		//if so
+		if (isExisting >= 0) {
+			this.cart.items[isExisting].qty += 1;
+			this.cart.items[isExisting].price = product.price;
+		}
+		//if not
+		else {
+			this.cart.items.push({
+				productId: product.id,
+				price: product.price,
+				qty: 1,
+			});
+		}
+		if (!this.cart.totalPrice) {
+			this.cart.totalPrice = 0;
+		}
+		this.cart.totalPrice += product.price;
+		return await this.save();
+	}
+};
+
+//method to decrease cart
+userSchema.methods.decreaseFromCart = async function (productId) {
+	//check if passed product has in current cart
+	const isExisting = this.cart.items.findIndex(
+		(item) =>
+			new String(item.productId).trim() === new String(productId).trim()
+	);
+	//if so
+	if (isExisting >= 0) {
+		//check if qty of product is greater than 1, if so, decrease the qty & update the totalPrice
+		if (this.cart.items[isExisting].qty > 1) {
+			this.cart.items[isExisting].qty -= 1;
+			this.cart.totalPrice -= this.cart.items[isExisting].price;
+			return await this.save();
+		}
+		//if not (<=1), go to this.removeFromCart
+		else {
+			this.removeFromCart(productId);
+		}
+	}
+};
+
+//method to remove cart
+userSchema.methods.removeFromCart = async function (productId) {
+	const isExisting = this.cart.items.findIndex(
+		(item) =>
+			new String(item.productId).trim() === new String(productId).trim()
+	);
+	if (isExisting >= 0) {
+		// this.cart.items[isExisting].qty += 1;
+
+		this.cart.totalPrice -=
+			this.cart.items[isExisting].price * this.cart.items[isExisting].qty;
+		this.cart.items.splice(isExisting, 1);
+		return await this.save();
+	}
 };
 
 const User = mongoose.model('User', userSchema);

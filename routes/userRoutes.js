@@ -21,7 +21,7 @@ router.patch(
 router.patch('/updateMe', authController.protect, userController.updateMe);
 router.delete('/deleteMe', authController.protect, userController.deleteMe);
 
-//Routes of users as assistant/admin (not yet completed)
+//Routes of users as assistant/admin ( completed)
 router
 	.route('/')
 	.get(
@@ -32,8 +32,16 @@ router
 	.post(userController.createUser);
 router
 	.route('/:id')
-	.get(userController.getUser)
-	.patch(userController.updateUser)
+	.get(
+		authController.protect,
+		authController.restrictTo('admin', 'assistant'),
+		userController.getUser
+	)
+	.patch(
+		authController.protect,
+		authController.restrictTo('admin', 'assistant'),
+		userController.updateUser
+	)
 	.delete(
 		authController.protect,
 		authController.restrictTo('admin'),
