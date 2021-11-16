@@ -17,7 +17,7 @@ const handleValidationErrorDB = (error) => {
 	const message = Object.values(error.errors)
 		.map((elm) => elm.message)
 		.join('. ');
-	console.log(message);
+	// console.log(message);
 	console.log('////');
 	return new AppError(message, 400);
 };
