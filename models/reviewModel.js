@@ -34,7 +34,7 @@ const reviewSchema = new mongoose.Schema(
 	}
 );
 
-reviewSchema.index({ user: 1, tour: 1 }, { unique: true });
+reviewSchema.index({ user: 1, product: 1 }, { unique: true });
 
 //QUERY MIDDLEWARE
 reviewSchema.pre(/^find/, function (next) {
