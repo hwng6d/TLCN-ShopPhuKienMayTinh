@@ -51,6 +51,7 @@ sendProdError = (err, res) => {
 	if (err.isOperational) {
 		res.status(err.statusCode).json({
 			status: err.status,
+			error: err,
 			message: err.message,
 		});
 	}
