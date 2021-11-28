@@ -1,6 +1,7 @@
 const catchAsync = require('../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const Product = require('../models/productModel');
+const User = require('../models/userModel');
 
 // 1) FOR CUSTOMER
 exports.addToCart = catchAsync(async (req, res, next) => {
@@ -15,15 +16,33 @@ exports.addToCart = catchAsync(async (req, res, next) => {
 });
 
 exports.getCart = catchAsync(async (req, res, next) => {
-	const cart = await req.user.populate('cart.items.productId');
+	let user = await User.findById(req.user.id);
+	const uptodateUserCart = await user.getCart();
+	user = uptodateUserCart;
+	await user.save();
 
-	res.status(400).json({
+	res.status(200).json({
 		status: 'success',
 		data: {
-			doc: cart,
+			doc: user,
 		},
 	});
 });
+
+// exports.getCart = catchAsync(async (req, res, next) => {
+// 	const cart = await req.user.populate('cart.items.productId');
+
+// 	validateCart(req.user);
+
+// 	await req.user.save();
+
+// 	res.status(400).json({
+// 		status: 'success',
+// 		data: {
+// 			doc: cart,
+// 		},
+// 	});
+// });
 
 exports.decreaseCart = catchAsync(async (req, res, next) => {
 	const decreasedCart = await req.user.decreaseFromCart(req.body.productId);
@@ -46,56 +65,3 @@ exports.deleteCart = catchAsync(async (req, res, next) => {
 		},
 	});
 });
-// exports.updateCart = catchAsync(async (req, res, next) => {
-// 	// api/v1/users/{user_id}/cart/{cart_id}
-// 	const updatedCart = await Cart.findByIdAndUpdate(
-// 		//id: cartId
-// 		req.params.cartId,
-// 		{
-// 			// body: user, product[{productId, quantity}]
-// 			$set: req.body,
-// 		},
-// 		{
-// 			new: true,
-// 			runValidators: true,
-// 		}
-// 	);
-
-// 	res.status(200).json({
-// 		status: 'success',
-// 		data: {
-// 			doc: updatedCart,
-// 		},
-// 	});
-// });
-
-// exports.deleteCart = catchAsync(async (req, res, next) => {
-// 	// api/v1/users/{user_id}/cart/{cart_id}
-// 	await Cart.findByIdAndDelete(req.params.cartId);
-
-// 	res.status(204).json({
-// 		status: 'success',
-// 		data: null,
-// 	});
-// });
-
-// // 2) FOR ADMIN
-// //get all carts on system
-// exports.getAllCarts = catchAsync(async (req, res, next) => {
-// 	const carts = await Cart.find();
-
-// 	res.status(200).json({
-// 		status: 'success',
-// 		data: carts,
-// 	});
-// });
-
-// //get cart of specified user
-// exports.getCart = catchAsync(async (req, res, next) => {
-// 	const cart = await Cart.findOne({ user: req.params.userId });
-
-// 	res.status(200).json({
-// 		status: 'message',
-// 		data: cart,
-// 	});
-// });

@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const Product = require('./../models/productModel');
-const AppError = require('../utils/appError');
+const validateCart = require('./../utils/validateCart');
 
 const userSchema = new mongoose.Schema(
 	{
@@ -56,6 +56,11 @@ const userSchema = new mongoose.Schema(
 						ref: 'Product',
 						required: true,
 					},
+					//
+					productName: {
+						type: String,
+					},
+					//
 					price: {
 						type: Number,
 						required: true,
@@ -68,6 +73,43 @@ const userSchema = new mongoose.Schema(
 			],
 			totalPrice: Number,
 		},
+		purchasingHistory: [
+			{
+				date: {
+					type: Date,
+					default: Date.now,
+				},
+				items: [
+					{
+						productId: {
+							type: mongoose.Types.ObjectId,
+							ref: 'Product',
+							required: true,
+						},
+						productName: {
+							type: String,
+						},
+						price: {
+							type: Number,
+							required: true,
+						},
+						qty: {
+							type: Number,
+							required: true,
+						},
+					},
+				],
+				name: {
+					type: String,
+				},
+				shippingAddress: {
+					type: String,
+				},
+				totalPrice: {
+					type: Number,
+				},
+			},
+		],
 	},
 	{
 		toJSON: { virtuals: true },
@@ -150,12 +192,21 @@ userSchema.methods.createResetPasswordToken = function () {
 	return resetToken;
 };
 
+//method to validate cart
+userSchema.methods.getCart = async function () {
+	await validateCart(this);
+
+	return await this.save();
+};
+
 //method to addToCart
 userSchema.methods.addToCart = async function (productId) {
+	await validateCart(this);
+
 	const product = await Product.findById(productId);
 
 	if (product) {
-		//check if passed product has in current cart
+		//check if passed product is in current cart
 		const isExisting = this.cart.items.findIndex(
 			(item) =>
 				new String(item.productId).trim() ===
@@ -166,12 +217,14 @@ userSchema.methods.addToCart = async function (productId) {
 		if (isExisting >= 0) {
 			this.cart.items[isExisting].qty += 1;
 			this.cart.items[isExisting].price = product.price;
+			this.cart.items[isExisting].productName = product.name;
 		}
 		//if not
 		else {
 			this.cart.items.push({
 				productId: product.id,
 				price: product.price,
+				productName: product.name,
 				qty: 1,
 			});
 		}
@@ -185,6 +238,13 @@ userSchema.methods.addToCart = async function (productId) {
 
 //method to decrease cart
 userSchema.methods.decreaseFromCart = async function (productId) {
+	await alidateCart(this);
+
+	//set totalPrice is 0 if no items in cart
+	if (this.cart.items.length === 0) {
+		this.cart.totalPrice = 0;
+	}
+
 	//check if passed product has in current cart
 	const isExisting = this.cart.items.findIndex(
 		(item) =>
@@ -196,6 +256,12 @@ userSchema.methods.decreaseFromCart = async function (productId) {
 		if (this.cart.items[isExisting].qty > 1) {
 			this.cart.items[isExisting].qty -= 1;
 			this.cart.totalPrice -= this.cart.items[isExisting].price;
+
+			//set totalPrice is 0 if no items in cart
+			if (this.cart.items.length === 0) {
+				this.cart.totalPrice = 0;
+			}
+
 			return await this.save();
 		}
 		//if not (<=1), go to this.removeFromCart
@@ -207,16 +273,26 @@ userSchema.methods.decreaseFromCart = async function (productId) {
 
 //method to remove cart
 userSchema.methods.removeFromCart = async function (productId) {
+	await validateCart(this);
+
+	//set totalPrice is 0 if no items in cart
+	if (this.cart.items.length === 0) {
+		this.cart.totalPrice = 0;
+	}
+
 	const isExisting = this.cart.items.findIndex(
 		(item) =>
 			new String(item.productId).trim() === new String(productId).trim()
 	);
 	if (isExisting >= 0) {
-		// this.cart.items[isExisting].qty += 1;
-
 		this.cart.totalPrice -=
 			this.cart.items[isExisting].price * this.cart.items[isExisting].qty;
 		this.cart.items.splice(isExisting, 1);
+
+		//set totalPrice is 0 if no items in cart
+		if (this.cart.items.length === 0) {
+			this.cart.totalPrice = 0;
+		}
 		return await this.save();
 	}
 };

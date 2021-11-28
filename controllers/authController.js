@@ -6,6 +6,8 @@ const catchAsync = require('./../utils/catchAsync');
 const AppError = require('./../utils/appError');
 const Email = require('./../utils/email');
 
+//const validateCart = require('./../utils/validateCart');
+
 //create token for user signed up or logged in
 const signToken = (id, name, email) => {
 	return jwt.sign({ id, name, email }, process.env.JWT_SECRET, {
