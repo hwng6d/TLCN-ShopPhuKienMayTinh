@@ -19,6 +19,7 @@ const signToken = (id, name, email) => {
 const createSendToken = (user, statusCode, res) => {
 	const token = signToken(user._id, user.name, user.email);
 
+	//
 	const cookieOptions = {
 		expires: new Date(
 			Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
@@ -29,6 +30,7 @@ const createSendToken = (user, statusCode, res) => {
 		cookieOptions.secure = true;
 	}
 	res.cookie('jwt', token, cookieOptions);
+	//
 
 	//hide password from output
 	res.password = undefined;
@@ -122,7 +124,10 @@ exports.restrictTo = (...roles) => {
 	return (req, res, next) => {
 		if (!roles.includes(req.user.role)) {
 			return next(
-				new AppError('You have no permission to perform this task!')
+				new AppError(
+					'You have no permission to perform this task!',
+					403
+				)
 			);
 		}
 
